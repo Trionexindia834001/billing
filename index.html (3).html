@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trionex India — Invoice Generator</title>
+<style>
+  :root{
+    --ink:#1a1a1a; --sub:#6b6b66; --muted:#9a9a94;
+    --bg:#faf9f6; --card:#ffffff; --line:#e4e2da;
+    --accent:#1d9e75; --accent-dark:#085041; --accent-bg:#e1f5ee;
+    --danger:#993c1d; --danger-bg:#faece7;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.5;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:24px 16px 80px;}
+  header.top{display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:8px;}
+  header.top h1{font-size:20px; font-weight:600; margin:0;}
+  header.top p{font-size:12px; color:var(--muted); margin:2px 0 0;}
+  .badge{font-size:11px; color:var(--accent-dark); background:var(--accent-bg); padding:4px 10px; border-radius:20px; font-weight:600;}
+
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+  @media (max-width:800px){ .grid{grid-template-columns:1fr;} }
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:20px; margin-bottom:20px;}
+  .card h2{font-size:14px; font-weight:600; margin:0 0 14px; display:flex; align-items:center; gap:8px;}
+  .card h2 .n{width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+  label{display:block; font-size:12px; color:var(--sub); margin:10px 0 4px; font-weight:500;}
+  label:first-of-type{margin-top:0;}
+  input[type=text], input[type=email], input[type=tel], input[type=number], input[type=date], select, textarea{
+    width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:6px;
+    font-size:14px; font-family:inherit; background:#fff; color:var(--ink);
+  }
+  input:focus, select:focus, textarea:focus{outline:2px solid var(--accent); outline-offset:-1px; border-color:var(--accent);}
+  textarea{resize:vertical; min-height:56px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
+
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; background:var(--bg); border-radius:8px; padding:10px 12px; margin-top:10px;}
+  .toggle-row span{font-size:13px; font-weight:500;}
+  .switch{position:relative; width:40px; height:22px; flex-shrink:0;}
+  .switch input{opacity:0; width:0; height:0;}
+  .slider{position:absolute; cursor:pointer; inset:0; background:#ccc; border-radius:22px; transition:.15s;}
+  .slider:before{content:""; position:absolute; height:16px; width:16px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.15s;}
+  .switch input:checked + .slider{background:var(--accent);}
+  .switch input:checked + .slider:before{transform:translateX(18px);}
+
+  .lineitem{border:1px solid var(--line); border-radius:8px; padding:12px; margin-bottom:10px; position:relative;}
+  .lineitem .remove{position:absolute; top:8px; right:8px; background:none; border:none; color:var(--muted); font-size:16px; cursor:pointer; line-height:1; padding:2px 6px;}
+  .lineitem .remove:hover{color:var(--danger);}
+  .li-grid{display:grid; grid-template-columns:2fr 1fr 1fr; gap:8px;}
+
+  button{
+    font-family:inherit; font-size:13px; font-weight:500; cursor:pointer; border-radius:7px;
+    padding:9px 16px; border:1px solid var(--line); background:#fff; color:var(--ink);
+  }
+  button:hover{background:var(--bg);}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink);}
+  button.primary:hover{opacity:.88;}
+  button.accent{background:var(--accent); color:#fff; border-color:var(--accent);}
+  button.accent:hover{opacity:.88;}
+  button.ghost{background:none; border:none; color:var(--sub); text-decoration:underline; padding:6px 0;}
+  button.full{width:100%;}
+  .btnrow{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;}
+
+  .summary{display:flex; justify-content:space-between; font-size:13px; padding:4px 0; color:var(--sub);}
+  .summary.total{font-size:16px; font-weight:600; color:var(--ink); border-top:1px solid var(--line); padding-top:10px; margin-top:6px;}
+
+  .savebar{font-size:12px; color:var(--muted); margin-top:8px; min-height:16px;}
+  .savebar.ok{color:var(--accent-dark);}
+
+  /* invoice preview */
+  #invoice{background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:36px; max-width:700px; margin:0 auto;}
+  #invoice .ihead{display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid var(--ink); padding-bottom:16px; margin-bottom:20px;}
+  #invoice .from p, #invoice .meta p{margin:2px 0;}
+  #invoice .from .name{font-size:19px; font-weight:700;}
+  #invoice .from p, #invoice .meta p{font-size:12.5px; color:var(--sub);}
+  #invoice .meta{text-align:right;}
+  #invoice .meta .label{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-top:10px;}
+  #invoice .meta .label:first-child{margin-top:0;}
+  #invoice .meta .val{font-size:13px; color:var(--ink); font-weight:600;}
+  #invoice h3.doctype{font-size:22px; margin:0 0 2px; letter-spacing:.02em;}
+
+  #invoice .billto{margin-bottom:22px;}
+  #invoice .billto .label{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin-bottom:4px;}
+  #invoice .billto .name{font-weight:600; font-size:14px;}
+  #invoice .billto p{margin:2px 0; font-size:12.5px; color:var(--sub);}
+
+  table.items{width:100%; border-collapse:collapse; margin-bottom:18px;}
+  table.items th{text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); border-bottom:1px solid var(--ink); padding:0 0 8px;}
+  table.items th.num, table.items td.num{text-align:right;}
+  table.items td{font-size:13px; padding:9px 0; border-bottom:1px solid var(--line);}
+
+  .totals{margin-left:auto; width:260px;}
+  .totals .line{display:flex; justify-content:space-between; font-size:13px; padding:4px 0; color:var(--sub);}
+  .totals .line.grand{font-size:16px; font-weight:700; color:var(--ink); border-top:1px solid var(--ink); padding-top:8px; margin-top:6px;}
+
+  .paydetails{margin-top:26px; padding-top:16px; border-top:1px solid var(--line); font-size:12.5px; color:var(--sub);}
+  .paydetails .label{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-bottom:6px;}
+  .notes{margin-top:16px; font-size:12px; color:var(--muted); font-style:italic;}
+  .gstin-line{font-size:12px; color:var(--sub); margin-top:6px;}
+
+  /* whatsapp reminder */
+  .wa-box{background:var(--accent-bg); border-radius:8px; padding:14px; margin-top:12px;}
+  .wa-box p{white-space:pre-wrap; font-size:13px; margin:0 0 10px; color:var(--accent-dark);}
+
+  @media print{
+    body *{visibility:hidden;}
+    #invoice, #invoice *{visibility:visible;}
+    #invoice{position:absolute; top:0; left:0; width:100%; border:none; padding:20px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>Invoice generator</h1>
+      <p>Trionex India · nothing leaves your browser except what you send</p>
+    </div>
+    <span class="badge" id="savedBadge">Details saved on this device</span>
+  </header>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2><span class="n">1</span>Your business details</h2>
+        <label>Business name</label>
+        <input type="text" id="bizName" value="Trionex India Private Limited">
+        <div class="row2">
+          <div><label>Email</label><input type="email" id="bizEmail" value="info.trionexindia@gmail.com"></div>
+          <div><label>Phone</label><input type="tel" id="bizPhone" value="7367880730"></div>
+        </div>
+        <label>Address</label>
+        <input type="text" id="bizAddress" value="Ranchi, Jharkhand, India" placeholder="Street, city, state">
+        <div class="toggle-row">
+          <span>Registered for GST</span>
+          <label class="switch"><input type="checkbox" id="gstToggle"><span class="slider"></span></label>
+        </div>
+        <div id="gstinWrap" style="display:none;">
+          <label>GSTIN</label>
+          <input type="text" id="bizGSTIN" placeholder="20AAAAA0000A1Z5">
+          <label>Business state (for CGST+SGST vs IGST)</label>
+          <input type="text" id="bizState" value="Jharkhand">
+        </div>
+        <button class="ghost full" id="saveBizBtn" style="text-align:left;">Save these as default</button>
+        <div class="savebar" id="saveMsg"></div>
+      </div>
+
+      <div class="card">
+        <h2><span class="n">2</span>Billed to</h2>
+        <label>Client / business name</label>
+        <input type="text" id="clientName" placeholder="e.g. Furniture Planet">
+        <div class="row2">
+          <div><label>Phone (for WhatsApp)</label><input type="tel" id="clientPhone" placeholder="10-digit number"></div>
+          <div><label>Client state</label><input type="text" id="clientState" placeholder="e.g. Jharkhand"></div>
+        </div>
+        <label>Address</label>
+        <input type="text" id="clientAddress" placeholder="City / area">
+      </div>
+
+      <div class="card">
+        <h2><span class="n">3</span>What you're billing for</h2>
+        <div id="lineItems"></div>
+        <button id="addLineBtn" type="button">+ Add line</button>
+      </div>
+
+      <div class="card">
+        <h2><span class="n">4</span>Invoice details</h2>
+        <div class="row3">
+          <div><label>Invoice no.</label><input type="text" id="invNumber" value="TX-0001"></div>
+          <div><label>Date</label><input type="date" id="invDate"></div>
+          <div><label>Due date</label><input type="date" id="invDue"></div>
+        </div>
+        <label>Notes / terms</label>
+        <textarea id="invNotes">50% advance, balance after 70% of work is complete.</textarea>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="position:sticky; top:16px;">
+        <h2>Preview</h2>
+        <div class="summary"><span>Subtotal</span><span id="sumSub">₹0.00</span></div>
+        <div class="summary" id="sumGstRow1Wrap" style="display:none;"><span id="sumGstLabel1">CGST</span><span id="sumGst1">₹0.00</span></div>
+        <div class="summary" id="sumGstRow2Wrap" style="display:none;"><span id="sumGstLabel2">SGST</span><span id="sumGst2">₹0.00</span></div>
+        <div class="summary total"><span>Total</span><span id="sumTotal">₹0.00</span></div>
+
+        <div class="btnrow">
+          <button class="primary full" id="printBtn">Save as PDF</button>
+        </div>
+        <div class="btnrow">
+          <button class="accent full" id="waBtn">Prepare WhatsApp reminder</button>
+        </div>
+        <div class="wa-box" id="waBox" style="display:none;">
+          <p id="waText"></p>
+          <button id="waCopyBtn">Copy message</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="invoice">
+    <div class="ihead">
+      <div class="from">
+        <p class="name" id="pv-bizName">Trionex India</p>
+        <p id="pv-bizAddress"></p>
+        <p id="pv-bizEmail"></p>
+        <p id="pv-bizPhone"></p>
+      </div>
+      <div class="meta">
+        <h3 class="doctype">Invoice</h3>
+        <p class="label">No.</p><p class="val" id="pv-invNumber"></p>
+        <p class="label">Date</p><p class="val" id="pv-invDate"></p>
+        <p class="label">Due</p><p class="val" id="pv-invDue"></p>
+      </div>
+    </div>
+
+    <div class="billto">
+      <p class="label">Billed to</p>
+      <p class="name" id="pv-clientName">—</p>
+      <p id="pv-clientAddress"></p>
+    </div>
+
+    <table class="items">
+      <thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead>
+      <tbody id="pv-items"></tbody>
+    </table>
+
+    <div class="totals">
+      <div class="line"><span>Subtotal</span><span id="pv-sub">₹0.00</span></div>
+      <div class="line" id="pv-gst1wrap" style="display:none;"><span id="pv-gst1label">CGST</span><span id="pv-gst1">₹0.00</span></div>
+      <div class="line" id="pv-gst2wrap" style="display:none;"><span id="pv-gst2label">SGST</span><span id="pv-gst2">₹0.00</span></div>
+      <div class="line grand"><span>Total</span><span id="pv-total">₹0.00</span></div>
+    </div>
+
+    <div class="gstin-line" id="pv-gstinLine" style="display:none;"></div>
+
+    <div class="paydetails">
+      <p class="label">Notes</p>
+      <p id="pv-notes"></p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fmt = n => '₹' + (Math.round((n + Number.EPSILON) * 100) / 100).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+let lineIdCounter = 0;
+function addLineItem(desc='', qty=1, rate=0){
+  const id = 'li' + (lineIdCounter++);
+  const div = document.createElement('div');
+  div.className = 'lineitem';
+  div.id = id;
+  div.innerHTML = `
+    <button type="button" class="remove" aria-label="Remove line" onclick="document.getElementById('${id}').remove(); recalc();">×</button>
+    <label>Description</label>
+    <input type="text" class="li-desc" value="${desc}" placeholder="e.g. Meta ads management, 1 month">
+    <div class="li-grid" style="margin-top:8px;">
+      <div><label>Description detail</label><input type="text" class="li-detail" placeholder="optional"></div>
+      <div><label>Qty</label><input type="number" class="li-qty" value="${qty}" min="0" step="1"></div>
+      <div><label>Rate (₹)</label><input type="number" class="li-rate" value="${rate}" min="0" step="0.01"></div>
+    </div>
+  `;
+  $('lineItems').appendChild(div);
+  div.querySelectorAll('input').forEach(inp => inp.addEventListener('input', recalc));
+  recalc();
+}
+
+function getLineItems(){
+  return Array.from(document.querySelectorAll('.lineitem')).map(el => ({
+    desc: el.querySelector('.li-desc').value || 'Service',
+    detail: el.querySelector('.li-detail').value || '',
+    qty: parseFloat(el.querySelector('.li-qty').value) || 0,
+    rate: parseFloat(el.querySelector('.li-rate').value) || 0
+  }));
+}
+
+function sameState(){
+  const biz = ($('bizState').value || '').trim().toLowerCase();
+  const cli = ($('clientState').value || '').trim().toLowerCase();
+  if(!biz || !cli) return true; // default to CGST+SGST if unspecified
+  return biz === cli;
+}
+
+function recalc(){
+  const items = getLineItems();
+  const subtotal = items.reduce((s,i) => s + i.qty * i.rate, 0);
+  const gstOn = $('gstToggle').checked;
+  let gst1 = 0, gst2 = 0, gst1label = 'CGST (9%)', gst2label = 'SGST (9%)';
+  if(gstOn){
+    if(sameState()){
+      gst1 = subtotal * 0.09; gst2 = subtotal * 0.09;
+      gst1label = 'CGST (9%)'; gst2label = 'SGST (9%)';
+    } else {
+      gst1 = subtotal * 0.18; gst2 = 0;
+      gst1label = 'IGST (18%)'; gst2label = '';
+    }
+  }
+  const total = subtotal + gst1 + gst2;
+
+  $('sumSub').textContent = fmt(subtotal);
+  $('sumTotal').textContent = fmt(total);
+  $('sumGstRow1Wrap').style.display = gstOn ? 'flex' : 'none';
+  $('sumGstRow2Wrap').style.display = (gstOn && gst2 > 0) ? 'flex' : 'none';
+  $('sumGstLabel1').textContent = gst1label;
+  $('sumGst1').textContent = fmt(gst1);
+  $('sumGstLabel2').textContent = gst2label;
+  $('sumGst2').textContent = fmt(gst2);
+
+  // preview
+  $('pv-bizName').textContent = $('bizName').value || 'Your business';
+  $('pv-bizAddress').textContent = $('bizAddress').value;
+  $('pv-bizEmail').textContent = $('bizEmail').value;
+  $('pv-bizPhone').textContent = $('bizPhone').value;
+  $('pv-invNumber').textContent = $('invNumber').value;
+  $('pv-invDate').textContent = $('invDate').value || '—';
+  $('pv-invDue').textContent = $('invDue').value || '—';
+  $('pv-clientName').textContent = $('clientName').value || '—';
+  $('pv-clientAddress').textContent = $('clientAddress').value;
+  $('pv-notes').textContent = $('invNotes').value;
+
+  const tbody = $('pv-items');
+  tbody.innerHTML = '';
+  items.forEach(i => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i.desc}${i.detail ? '<br><span style="color:var(--muted);font-size:11.5px;">'+i.detail+'</span>' : ''}</td><td class="num">${i.qty}</td><td class="num">${fmt(i.rate)}</td><td class="num">${fmt(i.qty*i.rate)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  $('pv-sub').textContent = fmt(subtotal);
+  $('pv-total').textContent = fmt(total);
+  $('pv-gst1wrap').style.display = gstOn ? 'flex' : 'none';
+  $('pv-gst2wrap').style.display = (gstOn && gst2 > 0) ? 'flex' : 'none';
+  $('pv-gst1label').textContent = gst1label;
+  $('pv-gst1').textContent = fmt(gst1);
+  $('pv-gst2label').textContent = gst2label;
+  $('pv-gst2').textContent = fmt(gst2);
+
+  if(gstOn && $('bizGSTIN').value){
+    $('pv-gstinLine').style.display = 'block';
+    $('pv-gstinLine').textContent = 'GSTIN: ' + $('bizGSTIN').value;
+  } else {
+    $('pv-gstinLine').style.display = 'none';
+  }
+}
+
+$('gstToggle').addEventListener('change', () => {
+  $('gstinWrap').style.display = $('gstToggle').checked ? 'block' : 'none';
+  recalc();
+});
+$('addLineBtn').addEventListener('click', () => addLineItem());
+['bizName','bizEmail','bizPhone','bizAddress','bizGSTIN','bizState','clientName','clientAddress','clientState','invNumber','invDate','invDue','invNotes']
+  .forEach(id => $(id).addEventListener('input', recalc));
+
+$('printBtn').addEventListener('click', () => window.print());
+
+$('waBtn').addEventListener('click', () => {
+  const items = getLineItems();
+  const total = $('sumTotal').textContent;
+  const name = $('clientName').value || 'there';
+  const due = $('invDue').value || 'the due date';
+  const service = items.map(i => i.desc).filter(Boolean).join(', ') || 'the recent work';
+  const msg = `Hi ${name}, this is a reminder that ${total} for ${service} is due on ${due}. Please let us know once it's processed.\n\n— Trionex India`;
+  $('waText').textContent = msg;
+  $('waBox').style.display = 'block';
+});
+$('waCopyBtn').addEventListener('click', async () => {
+  try{
+    await navigator.clipboard.writeText($('waText').textContent);
+    $('waCopyBtn').textContent = 'Copied';
+    setTimeout(() => $('waCopyBtn').textContent = 'Copy message', 1500);
+  }catch(e){}
+});
+
+// persistence via window.storage (business details only)
+async function loadBizDetails(){
+  try{
+    const r = await window.storage.get('biz-details', false);
+    if(r && r.value){
+      const d = JSON.parse(r.value);
+      if(d.bizName) $('bizName').value = d.bizName;
+      if(d.bizEmail) $('bizEmail').value = d.bizEmail;
+      if(d.bizPhone) $('bizPhone').value = d.bizPhone;
+      if(d.bizAddress) $('bizAddress').value = d.bizAddress;
+      if(d.bizGSTIN) $('bizGSTIN').value = d.bizGSTIN;
+      if(d.bizState) $('bizState').value = d.bizState;
+      if(d.gstOn){ $('gstToggle').checked = true; $('gstinWrap').style.display = 'block'; }
+      $('savedBadge').textContent = 'Details loaded from this device';
+    }
+  }catch(e){
+    $('savedBadge').textContent = 'New — nothing saved yet';
+  }
+}
+$('saveBizBtn').addEventListener('click', async () => {
+  const d = {
+    bizName: $('bizName').value, bizEmail: $('bizEmail').value, bizPhone: $('bizPhone').value,
+    bizAddress: $('bizAddress').value, bizGSTIN: $('bizGSTIN').value, bizState: $('bizState').value,
+    gstOn: $('gstToggle').checked
+  };
+  try{
+    const res = await window.storage.set('biz-details', JSON.stringify(d), false);
+    $('saveMsg').textContent = res ? 'Saved to this device.' : 'Could not save — try again.';
+    $('saveMsg').className = res ? 'savebar ok' : 'savebar';
+  }catch(e){
+    $('saveMsg').textContent = 'Could not save on this device.';
+  }
+});
+
+// init
+(function init(){
+  const today = new Date();
+  const due = new Date(today.getTime() + 7*24*60*60*1000);
+  $('invDate').value = today.toISOString().slice(0,10);
+  $('invDue').value = due.toISOString().slice(0,10);
+  addLineItem('Meta ads management, 1 month', 1, 4999);
+  loadBizDetails();
+  recalc();
+})();
+</script>
+</body>
+</html>
